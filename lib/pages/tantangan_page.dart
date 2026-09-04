@@ -13,7 +13,7 @@ class TantanganPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Tantangan UI (Sesuai Sketsa)',
+                'Made by Yss',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -32,7 +32,7 @@ class TantanganPage extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: Image.network(
-                          'https://jejakpahril.pages.dev/assets/img/gede.jpeg',
+                          'https://www.static-src.com/wcsstore/Indraprastha/images/catalog/full/catalog-image/98/MTA-183391801/tropical_tropical_minyak_goreng_sawit_botol_1500ml_-_krat_isi_8_pcs_full02_46e6900a.webp',
                           height: 140,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -45,7 +45,7 @@ class TantanganPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Product Name',
+                        'Minyak Sawit',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -56,7 +56,7 @@ class TantanganPage extends StatelessWidget {
                         'Rp 10.000',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: Color.fromARGB(221, 0, 184, 31),
                         ),
                       ),
                       const SizedBox(height: 20),

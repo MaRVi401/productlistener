@@ -13,7 +13,19 @@ class _AddProductPageState extends State<AddProductPage> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _descController = TextEditingController();
-  final _categoryController = TextEditingController();
+
+  // Variabel untuk menyimpan kategori yang dipilih
+  String? _selectedCategory;
+
+  // Daftar opsi kategori sesuai permintaan
+  final List<String> _categories = [
+    'Sembako',
+    'Cleaning Supplies',
+    'Personal Care',
+    'Laundry',
+    'Kitchen Essentials',
+    'Health Care',
+  ];
 
   bool _isLoading = false;
 
@@ -34,8 +46,8 @@ class _AddProductPageState extends State<AddProductPage> {
         name: _nameController.text,
         price: price,
         description: _descController.text,
-        category: _categoryController.text,
-        imageUrl: 'https://jejakpahril.pages.dev/assets/img/gede.jpeg',
+        category: _selectedCategory!,
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVTP6tvXxiu18qVLQ5Dh-2cuu6AuqMF04gNfRHkcCXyk2qNWx4uVAdiUk&s=10',
       );
 
       if (mounted) {
@@ -80,6 +92,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 key: _formKey,
                 child: ListView(
                   children: [
+                    // 1. Nama Produk
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(labelText: 'Nama Produk'),
@@ -87,6 +100,8 @@ class _AddProductPageState extends State<AddProductPage> {
                           (value == null || value.isEmpty) ? 'Nama wajib diisi' : null,
                     ),
                     const SizedBox(height: 12),
+
+                    // 2. Harga Produk
                     TextFormField(
                       controller: _priceController,
                       keyboardType: TextInputType.number,
@@ -98,13 +113,31 @@ class _AddProductPageState extends State<AddProductPage> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _categoryController,
-                      decoration: const InputDecoration(labelText: 'Kategori'),
+
+                    // 3. Dropdown Kategori
+                    DropdownButtonFormField<String>(
+                      value: _selectedCategory,
+                      decoration: const InputDecoration(
+                        labelText: 'Kategori',
+                      ),
+                      hint: const Text('Pilih Kategori'),
+                      items: _categories.map((String category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedCategory = newValue;
+                        });
+                      },
                       validator: (value) =>
-                          (value == null || value.isEmpty) ? 'Kategori wajib diisi' : null,
+                          (value == null || value.isEmpty) ? 'Pilih salah satu kategori' : null,
                     ),
                     const SizedBox(height: 12),
+
+                    // 4. Deskripsi Produk
                     TextFormField(
                       controller: _descController,
                       maxLines: 3,
@@ -113,6 +146,8 @@ class _AddProductPageState extends State<AddProductPage> {
                           (value == null || value.isEmpty) ? 'Deskripsi wajib diisi' : null,
                     ),
                     const SizedBox(height: 24),
+
+                    // 5. Tombol Simpan
                     ElevatedButton(
                       onPressed: _submitForm,
                       style: ElevatedButton.styleFrom(

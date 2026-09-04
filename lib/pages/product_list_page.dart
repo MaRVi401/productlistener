@@ -13,11 +13,11 @@ class ProductListPage extends StatefulWidget {
 class _ProductListPageState extends State<ProductListPage> {
   final List<Product> _products = [
     Product(
-      name: 'Batu Gn.Gede',
-      price: 50000000,
-      description: 'Batu langka langsung diambil dari puncak Gunung Gede.',
-      category: 'Koleksi',
-      imageUrl: 'https://jejakpahril.pages.dev/assets/img/gede.jpeg',
+      name: 'Minyak Sawit',
+      price: 50000,
+      description: 'Minyak sawit berkualitas tinggi, cocok untuk memasak dan keperluan industri.',
+      category: 'Sembako',
+      imageUrl: 'https://indonesianpalmoilnews.com/wp-content/uploads/2022/11/thum-minyak-kelapa-sawit.jpg',
     ),
   ];
 
@@ -64,7 +64,7 @@ class _ProductListPageState extends State<ProductListPage> {
                   'Rp ${product.price.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 18,
-                    color: Colors.green,
+                    color: Color.fromARGB(221, 0, 184, 31),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -110,7 +110,7 @@ class _ProductListPageState extends State<ProductListPage> {
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: ProductCard(
                   product: product,
-                  onTap: () => _showProductDetailDialog(context, product),
+                  onDetailTap: () => _showProductDetailDialog(context, product),
                 ),
               );
             }).toList(),
