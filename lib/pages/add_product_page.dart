@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../services/api_service.dart';
 
 class AddProductPage extends StatefulWidget {
   final Product? productToEdit;
@@ -17,6 +18,8 @@ class _AddProductPageState extends State<AddProductPage> {
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
   late TextEditingController _imageUrlController;
+
+  bool _isSubmitting = false;
 
   bool get _isEditing => widget.productToEdit != null;
 
@@ -46,24 +49,60 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final name = _nameController.text.trim();
-      final price = double.parse(_priceController.text.trim());
-      final quantity = int.parse(_quantityController.text.trim());
-      final imageUrl = _imageUrlController.text.trim().isEmpty
-          ? null
-          : _imageUrlController.text.trim();
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      final productResult = Product(
-        id: _isEditing ? widget.productToEdit!.id : null,
-        name: name,
-        price: price,
-        quantity: quantity,
-        imageUrl: imageUrl,
-      );
+    setState(() {
+      _isSubmitting = true;
+    });
 
-      Navigator.pop(context, productResult);
+    final name = _nameController.text.trim();
+    final price = double.parse(_priceController.text.trim());
+    final quantity = int.parse(_quantityController.text.trim());
+    final imageUrl = _imageUrlController.text.trim().isEmpty
+        ? null
+        : _imageUrlController.text.trim();
+
+    final productData = Product(
+      id: widget.productToEdit?.id,
+      name: name,
+      price: price,
+      quantity: quantity,
+      imageUrl: imageUrl,
+    );
+
+    try {
+      Product savedProduct;
+      if (_isEditing) {
+        // Panggil HTTP PATCH
+        savedProduct = await ApiService.updateProduct(
+          widget.productToEdit!.id!,
+          productData,
+        );
+      } else {
+        // Panggil HTTP POST
+        savedProduct = await ApiService.createProduct(productData);
+      }
+
+      if (mounted) {
+        // Kirim hasil kembali ke Halaman Utama
+        Navigator.pop(context, savedProduct);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -96,7 +135,8 @@ class _AddProductPageState extends State<AddProductPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _priceController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Price',
                   border: OutlineInputBorder(),
@@ -134,18 +174,24 @@ class _AddProductPageState extends State<AddProductPage> {
               TextFormField(
                 controller: _imageUrlController,
                 decoration: const InputDecoration(
-                  labelText: 'Image URL (Optional)',
+                  labelText: 'Image ID / Asset UUID (Optional)',
                   border: OutlineInputBorder(),
-                  hintText: 'https://example.com/image.jpg',
+                  hintText: 'Misal: 7e82272d-9218-41ee-8733-9b6326854a39',
                 ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _isSubmitting ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text(_isEditing ? 'Update Product' : 'Save Product'),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_isEditing ? 'Update Product' : 'Save Product'),
               ),
             ],
           ),

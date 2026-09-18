@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../services/storage_service.dart';
+import '../services/api_service.dart';
 import '../widgets/product_card.dart';
 import 'add_product_page.dart';
 
@@ -12,7 +12,6 @@ class ProductListPage extends StatefulWidget {
 }
 
 class _ProductListPageState extends State<ProductListPage> {
-  // State Variables
   bool _isLoading = true;
   String? _errorMessage;
   List<Product> _allProducts = [];
@@ -23,7 +22,7 @@ class _ProductListPageState extends State<ProductListPage> {
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _fetchProducts();
   }
 
   @override
@@ -32,45 +31,43 @@ class _ProductListPageState extends State<ProductListPage> {
     super.dispose();
   }
 
-  // Load Data dari Local Storage
-  Future<void> _loadProducts() async {
+  // GET API Request
+  Future<void> _fetchProducts() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final loadedData = await StorageService.loadProducts();
+      final products = await ApiService.getProducts();
       setState(() {
-        _allProducts = loadedData;
-        _filteredProducts = List.from(loadedData);
+        _allProducts = products;
+        _filteredProducts = List.from(products);
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Gagal memuat data produk: $e';
+        _errorMessage = e.toString();
         _isLoading = false;
       });
     }
   }
 
-  // Fitur Pencarian
+  // Fitur Search
   void _searchProduct(String query) {
     setState(() {
       if (query.trim().isEmpty) {
         _filteredProducts = List.from(_allProducts);
       } else {
         _filteredProducts = _allProducts
-            .where(
-              (product) =>
-                  product.name.toLowerCase().contains(query.toLowerCase()),
-            )
+            .where((product) =>
+                product.name.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });
   }
 
-  // Fitur Tambah Produk (Add)
+  // POST (Add)
   Future<void> _navigateToAddProduct() async {
     final result = await Navigator.push<Product>(
       context,
@@ -78,16 +75,12 @@ class _ProductListPageState extends State<ProductListPage> {
     );
 
     if (result != null) {
-      setState(() {
-        _allProducts.add(result);
-        _searchProduct(_searchController.text);
-      });
-      await StorageService.saveProducts(_allProducts);
+      _fetchProducts();
     }
   }
 
-  // Fitur Edit Produk
-  Future<void> _navigateToEditProduct(int index, Product product) async {
+  // PATCH (Edit)
+  Future<void> _navigateToEditProduct(Product product) async {
     final result = await Navigator.push<Product>(
       context,
       MaterialPageRoute(
@@ -96,67 +89,62 @@ class _ProductListPageState extends State<ProductListPage> {
     );
 
     if (result != null) {
-      setState(() {
-        // Cari index aktual di list utama berdasarkan ID/referensi
-        final mainIndex = _allProducts.indexWhere(
-          (p) => p.id == product.id || p == product,
-        );
-        if (mainIndex != -1) {
-          _allProducts[mainIndex] = result;
-        }
-        _searchProduct(_searchController.text);
-      });
-      await StorageService.saveProducts(_allProducts);
+      _fetchProducts();
     }
   }
 
-  // Fitur Hapus Produk (Delete) dengan Confrimation Alert
+  // DELETE
   Future<void> _deleteProduct(Product product) async {
+    if (product.id == null) return;
+
     final bool? confirmDelete = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Konfirmasi Hapus'),
-          content: Text('Apakah Anda yakin ingin menghapus "${product.name}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Batal'),
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text('Apakah Anda yakin ingin menghapus "${product.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Hapus'),
-            ),
-          ],
-        );
-      },
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
     );
 
-    // Jalankan penghapusan hanya jika pengguna menekan tombol "Hapus"
     if (confirmDelete == true) {
-      setState(() {
-        _allProducts.removeWhere((p) => p.id == product.id || p == product);
-        _searchProduct(_searchController.text);
-      });
-      await StorageService.saveProducts(_allProducts);
+      try {
+        await ApiService.deleteProduct(product.id!);
+        _fetchProducts();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus: $e')),
+          );
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Simple Inventory')),
+      appBar: AppBar(
+        title: const Text('Inventory API App'),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddProduct,
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          // Input Search
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -178,65 +166,70 @@ class _ProductListPageState extends State<ProductListPage> {
               onChanged: _searchProduct,
             ),
           ),
-          // Handling State: Loading, Error, Empty, Success
-          Expanded(child: _buildBodyState()),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _fetchProducts,
+              child: _buildBodyState(),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildBodyState() {
-    // 1. Loading State
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // 2. Error State
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 8),
-            Text(_errorMessage!, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadProducts,
-              child: const Text('Coba Lagi'),
+      return ListView(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 8),
+                  Text(_errorMessage!, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _fetchProducts,
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    // 3. Empty State
     if (_filteredProducts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.inbox, size: 48, color: Colors.grey),
-            const SizedBox(height: 8),
-            Text(
-              _allProducts.isEmpty
-                  ? 'Belum ada produk. Klik tombol + untuk menambahkan.'
-                  : 'Produk tidak ditemukan.',
-              style: const TextStyle(color: Colors.grey),
+      return ListView(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: const Center(
+              child: Text(
+                'Data produk tidak ditemukan.',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    // 4. Success State (Tampilan List Data)
     return ListView.builder(
       itemCount: _filteredProducts.length,
       itemBuilder: (context, index) {
         final product = _filteredProducts[index];
         return CardProduct(
           product: product,
-          onEdit: () => _navigateToEditProduct(index, product),
+          onEdit: () => _navigateToEditProduct(product),
           onTap: () => _deleteProduct(product),
         );
       },

@@ -3,8 +3,8 @@ import '../models/product.dart';
 
 class CardProduct extends StatelessWidget {
   final Product product;
-  final VoidCallback? onTap; // Mengakomodasi tombol Delete
-  final VoidCallback? onEdit;
+  final VoidCallback? onTap; // Digunakan untuk fungsi Delete
+  final VoidCallback? onEdit; // Digunakan untuk fungsi Edit
 
   const CardProduct({
     super.key,
@@ -13,7 +13,7 @@ class CardProduct extends StatelessWidget {
     this.onEdit,
   });
 
-  // Modal Bottom Sheet Preview Detail
+  // Modal Bottom Sheet untuk Preview Detail Produk
   void _showPreviewModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -39,11 +39,12 @@ class CardProduct extends StatelessWidget {
                   ),
                 ),
               ),
+              // Gambar Produk dari Server / Assets API
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                child: product.fullImageUrl != null
                     ? Image.network(
-                        product.imageUrl!,
+                        product.fullImageUrl!,
                         height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -83,6 +84,21 @@ class CardProduct extends StatelessWidget {
                 'Quantity: ${product.quantity}',
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
+              if (product.category != null && product.category!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Category: ${product.category}',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+              if (product.description != null &&
+                  product.description!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Description:\n${product.description}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -111,11 +127,12 @@ class CardProduct extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Preview Gambar Kecil pada Card
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                child: product.fullImageUrl != null
                     ? Image.network(
-                        product.imageUrl!,
+                        product.fullImageUrl!,
                         height: 140,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -136,7 +153,8 @@ class CardProduct extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 product.name,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text('Price: Rp ${product.price.toStringAsFixed(0)}'),
