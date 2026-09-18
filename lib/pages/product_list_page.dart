@@ -61,8 +61,10 @@ class _ProductListPageState extends State<ProductListPage> {
         _filteredProducts = List.from(_allProducts);
       } else {
         _filteredProducts = _allProducts
-            .where((product) =>
-                product.name.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (product) =>
+                  product.name.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -72,9 +74,7 @@ class _ProductListPageState extends State<ProductListPage> {
   Future<void> _navigateToAddProduct() async {
     final result = await Navigator.push<Product>(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddProductPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const AddProductPage()),
     );
 
     if (result != null) {
@@ -98,8 +98,9 @@ class _ProductListPageState extends State<ProductListPage> {
     if (result != null) {
       setState(() {
         // Cari index aktual di list utama berdasarkan ID/referensi
-        final mainIndex =
-            _allProducts.indexWhere((p) => p.id == product.id || p == product);
+        final mainIndex = _allProducts.indexWhere(
+          (p) => p.id == product.id || p == product,
+        );
         if (mainIndex != -1) {
           _allProducts[mainIndex] = result;
         }
@@ -109,21 +110,46 @@ class _ProductListPageState extends State<ProductListPage> {
     }
   }
 
-  // Fitur Hapus Produk (Delete)
+  // Fitur Hapus Produk (Delete) dengan Confrimation Alert
   Future<void> _deleteProduct(Product product) async {
-    setState(() {
-      _allProducts.removeWhere((p) => p.id == product.id || p == product);
-      _searchProduct(_searchController.text);
-    });
-    await StorageService.saveProducts(_allProducts);
+    final bool? confirmDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: Text('Apakah Anda yakin ingin menghapus "${product.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Jalankan penghapusan hanya jika pengguna menekan tombol "Hapus"
+    if (confirmDelete == true) {
+      setState(() {
+        _allProducts.removeWhere((p) => p.id == product.id || p == product);
+        _searchProduct(_searchController.text);
+      });
+      await StorageService.saveProducts(_allProducts);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Simple Inventory'),
-      ),
+      appBar: AppBar(title: const Text('Simple Inventory')),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddProduct,
         child: const Icon(Icons.add),
@@ -153,9 +179,7 @@ class _ProductListPageState extends State<ProductListPage> {
             ),
           ),
           // Handling State: Loading, Error, Empty, Success
-          Expanded(
-            child: _buildBodyState(),
-          ),
+          Expanded(child: _buildBodyState()),
         ],
       ),
     );
@@ -164,9 +188,7 @@ class _ProductListPageState extends State<ProductListPage> {
   Widget _buildBodyState() {
     // 1. Loading State
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     // 2. Error State
