@@ -16,13 +16,13 @@ class _AddProductPageState extends State<AddProductPage> {
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
+  late TextEditingController _imageUrlController;
 
   bool get _isEditing => widget.productToEdit != null;
 
   @override
   void initState() {
     super.initState();
-    // Prefill data jika dalam mode Edit
     _nameController = TextEditingController(
       text: _isEditing ? widget.productToEdit!.name : '',
     );
@@ -32,6 +32,9 @@ class _AddProductPageState extends State<AddProductPage> {
     _quantityController = TextEditingController(
       text: _isEditing ? widget.productToEdit!.quantity.toString() : '',
     );
+    _imageUrlController = TextEditingController(
+      text: _isEditing ? widget.productToEdit!.imageUrl ?? '' : '',
+    );
   }
 
   @override
@@ -39,6 +42,7 @@ class _AddProductPageState extends State<AddProductPage> {
     _nameController.dispose();
     _priceController.dispose();
     _quantityController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -47,15 +51,18 @@ class _AddProductPageState extends State<AddProductPage> {
       final name = _nameController.text.trim();
       final price = double.parse(_priceController.text.trim());
       final quantity = int.parse(_quantityController.text.trim());
+      final imageUrl = _imageUrlController.text.trim().isEmpty
+          ? null
+          : _imageUrlController.text.trim();
 
       final productResult = Product(
         id: _isEditing ? widget.productToEdit!.id : null,
         name: name,
         price: price,
         quantity: quantity,
+        imageUrl: imageUrl,
       );
 
-      // Kembalikan objek Product ke halaman sebelumnya
       Navigator.pop(context, productResult);
     }
   }
@@ -122,6 +129,15 @@ class _AddProductPageState extends State<AddProductPage> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _imageUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'Image URL (Optional)',
+                  border: OutlineInputBorder(),
+                  hintText: 'https://example.com/image.jpg',
+                ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

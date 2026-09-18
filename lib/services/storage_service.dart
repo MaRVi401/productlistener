@@ -5,7 +5,6 @@ import '../models/product.dart';
 class StorageService {
   static const String _key = 'products_data';
 
-  // Simpan list produk ke local storage
   static Future<void> saveProducts(List<Product> products) async {
     final prefs = await SharedPreferences.getInstance();
     final List<String> jsonList =
@@ -13,7 +12,6 @@ class StorageService {
     await prefs.setStringList(_key, jsonList);
   }
 
-  // Ambil list produk dari local storage
   static Future<List<Product>> loadProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? jsonList = prefs.getStringList(_key);
