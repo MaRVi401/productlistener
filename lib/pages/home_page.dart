@@ -42,7 +42,7 @@ class HomePage extends StatelessWidget {
                   Text(
                     'Temukan berbagai produk berkualitas dengan harga terbaik.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),

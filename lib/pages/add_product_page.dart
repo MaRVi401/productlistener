@@ -116,7 +116,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
                     // 3. Dropdown Kategori
                     DropdownButtonFormField<String>(
-                      value: _selectedCategory,
+                      initialValue: _selectedCategory,
                       decoration: const InputDecoration(
                         labelText: 'Kategori',
                       ),
