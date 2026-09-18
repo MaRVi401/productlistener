@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 
 class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key});
+  final Product? productToEdit;
+
+  const AddProductPage({super.key, this.productToEdit});
 
   @override
   State<AddProductPage> createState() => _AddProductPageState();
@@ -10,60 +12,51 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _descController = TextEditingController();
 
-  // Variabel untuk menyimpan kategori yang dipilih
-  String? _selectedCategory;
+  late TextEditingController _nameController;
+  late TextEditingController _priceController;
+  late TextEditingController _quantityController;
 
-  // Daftar opsi kategori sesuai permintaan
-  final List<String> _categories = [
-    'Sembako',
-    'Cleaning Supplies',
-    'Personal Care',
-    'Laundry',
-    'Kitchen Essentials',
-    'Health Care',
-  ];
+  bool get _isEditing => widget.productToEdit != null;
 
-  bool _isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    // Prefill data jika dalam mode Edit
+    _nameController = TextEditingController(
+      text: _isEditing ? widget.productToEdit!.name : '',
+    );
+    _priceController = TextEditingController(
+      text: _isEditing ? widget.productToEdit!.price.toString() : '',
+    );
+    _quantityController = TextEditingController(
+      text: _isEditing ? widget.productToEdit!.quantity.toString() : '',
+    );
+  }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
 
-    setState(() => _isLoading = true);
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final name = _nameController.text.trim();
+      final price = double.parse(_priceController.text.trim());
+      final quantity = int.parse(_quantityController.text.trim());
 
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-
-      double price = double.parse(_priceController.text);
-      if (price <= 0) {
-        throw Exception('Harga harus lebih dari 0!');
-      }
-
-      final newProduct = Product(
-        name: _nameController.text,
+      final productResult = Product(
+        id: _isEditing ? widget.productToEdit!.id : null,
+        name: name,
         price: price,
-        description: _descController.text,
-        category: _selectedCategory!,
-        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVTP6tvXxiu18qVLQ5Dh-2cuu6AuqMF04gNfRHkcCXyk2qNWx4uVAdiUk&s=10',
+        quantity: quantity,
       );
 
-      if (mounted) {
-        Navigator.pop(context, newProduct);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      // Kembalikan objek Product ke halaman sebelumnya
+      Navigator.pop(context, productResult);
     }
   }
 
@@ -71,96 +64,77 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Product'),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
+        title: Text(_isEditing ? 'Edit Product' : 'Add Product'),
       ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Menyimpan produk...'),
-                ],
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  children: [
-                    // 1. Nama Produk
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Nama Produk'),
-                      validator: (value) =>
-                          (value == null || value.isEmpty) ? 'Nama wajib diisi' : null,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 2. Harga Produk
-                    TextFormField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Harga (Rp)'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Harga wajib diisi';
-                        if (double.tryParse(value) == null) return 'Masukkan angka valid';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 3. Dropdown Kategori
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Kategori',
-                      ),
-                      hint: const Text('Pilih Kategori'),
-                      items: _categories.map((String category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedCategory = newValue;
-                        });
-                      },
-                      validator: (value) =>
-                          (value == null || value.isEmpty) ? 'Pilih salah satu kategori' : null,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 4. Deskripsi Produk
-                    TextFormField(
-                      controller: _descController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Deskripsi'),
-                      validator: (value) =>
-                          (value == null || value.isEmpty) ? 'Deskripsi wajib diisi' : null,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // 5. Tombol Simpan
-                    ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text('Simpan Produk'),
-                    ),
-                  ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Product Name',
+                  border: OutlineInputBorder(),
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nama produk tidak boleh kosong';
+                  }
+                  return null;
+                },
               ),
-            ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Price',
+                  border: OutlineInputBorder(),
+                  prefixText: 'Rp ',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Harga tidak boleh kosong';
+                  }
+                  if (double.tryParse(value.trim()) == null) {
+                    return 'Masukkan harga yang valid';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Quantity',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Jumlah tidak boleh kosong';
+                  }
+                  if (int.tryParse(value.trim()) == null) {
+                    return 'Masukkan jumlah angka yang valid';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _submitForm,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text(_isEditing ? 'Update Product' : 'Save Product'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
