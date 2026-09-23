@@ -1,69 +1,89 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
-import 'pages/tantangan_page.dart';
-import 'pages/product_list_page.dart';
+import 'data/datasources/product_remote_datasource.dart';
+import 'data/repositories/product_repository_impl.dart';
+import 'domain/usecases/add_product.dart';
+import 'domain/usecases/get_products.dart';
+import 'presentation/mobx/product_store.dart';
+import 'presentation/pages/add_product_page.dart';
+import 'presentation/pages/home_page.dart';
+import 'presentation/pages/product_list_page.dart';
+import 'presentation/pages/tantangan_page.dart';
+import 'core/network/api_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final apiService = ApiService(); 
+  final remoteDataSource = ProductRemoteDataSource(apiService: apiService);
+  final repository = ProductRepositoryImpl(remoteDataSource: remoteDataSource);
+
+  final getProductsUseCase = GetProducts(repository);
+  final addProductUseCase = AddProduct(repository);
+
+  final productStore = ProductStore(
+    getProductsUseCase: getProductsUseCase,
+    addProductUseCase: addProductUseCase,
+  );
+
+  runApp(MyApp(productStore: productStore));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ProductStore productStore;
+
+  const MyApp({super.key, required this.productStore});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Product Catalog',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MainNavigation(),
+      title: 'Product Listener MobX',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: MainNavigation(productStore: productStore),
     );
   }
 }
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final ProductStore productStore;
+
+  const MainNavigation({super.key, required this.productStore});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
+  int _currentIndex = 0;
 
-  final List<String> _titles = [
-    'Home',
-    'Tantangan',
-    'Tugas Katalog',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    widget.productStore.fetchProducts();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // List Halaman ditaruh di dalam build agar fungsi pindah tab aktif sempurna
     final List<Widget> pages = [
-      HomePage(
-        onNavigateToCatalog: () {
-          setState(() {
-            _selectedIndex = 2; // Otomatis pindah ke Tab Tugas Katalog
-          });
-        },
-      ),
-      const TantanganPage(),
-      const ProductListPage(),
+      HomePage(productStore: widget.productStore),
+      ProductListPage(productStore: widget.productStore),
+      AddProductPage(productStore: widget.productStore),
+      TantanganPage(productStore: widget.productStore),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_selectedIndex]),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
       ),
-      body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
-            _selectedIndex = index;
+            _currentIndex = index;
           });
         },
         items: const [
@@ -72,12 +92,16 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.star),
-            label: 'Tantangan',
+            icon: Icon(Icons.list),
+            label: 'Produk',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Tugas',
+            icon: Icon(Icons.add),
+            label: 'Tambah',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.extension),
+            label: 'Tantangan',
           ),
         ],
       ),
