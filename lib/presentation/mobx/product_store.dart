@@ -17,7 +17,7 @@ abstract class _ProductStore with Store {
     required this.getProductsUseCase,
     required this.addProductUseCase,
   }) {
-    // REACTION: Log otomatis saat timbul errorMessage
+    // REACTION: Log otomatis ketika timbul errorMessage
     _disposers = [
       reaction((_) => errorMessage, (String? message) {
         if (message != null && message.isNotEmpty) {
@@ -68,20 +68,23 @@ abstract class _ProductStore with Store {
     errorMessage = null;
     try {
       final newProduct = Product(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '', // ID dikosongkan karena dibuat otomatis oleh server
         name: name,
         price: price,
       );
+
       final success = await addProductUseCase.execute(newProduct);
+
       if (success) {
-        products.add(newProduct);
+        // Fetch ulang data dari API untuk sinkronisasi resmi dengan server
+        await fetchProducts();
         return true;
       } else {
-        errorMessage = "Gagal menambah produk ke API";
+        errorMessage = "Gagal menyimpan data ke API server";
         return false;
       }
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = "Error API: ${e.toString()}";
       return false;
     } finally {
       isLoading = false;
