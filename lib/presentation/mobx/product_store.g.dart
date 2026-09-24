@@ -84,18 +84,19 @@ mixin _$ProductStore on _ProductStore, Store {
       AsyncAction('_ProductStore.addNewProduct', context: context);
 
   @override
-  Future<bool> addNewProduct(String name, double price) {
-    return _$addNewProductAsyncAction
-        .run(() => super.addNewProduct(name, price));
+  Future<bool> addNewProduct(String name, double price,
+      {String? description, String? category, int? stock}) {
+    return _$addNewProductAsyncAction.run(() => super.addNewProduct(name, price,
+        description: description, category: category, stock: stock));
   }
 
   late final _$editProductAsyncAction =
       AsyncAction('_ProductStore.editProduct', context: context);
 
   @override
-  Future<bool> editProduct(String id, String newName, double newPrice) {
+  Future<bool> editProduct(String id, Map<String, dynamic> updatedData) {
     return _$editProductAsyncAction
-        .run(() => super.editProduct(id, newName, newPrice));
+        .run(() => super.editProduct(id, updatedData));
   }
 
   late final _$removeProductAsyncAction =

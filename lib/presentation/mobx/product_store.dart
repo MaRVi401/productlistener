@@ -65,19 +65,23 @@ abstract class _ProductStore with Store {
   }
 
   @action
-  Future<bool> addNewProduct(String name, double price) async {
+  Future<bool> addNewProduct(String name, double price, {String? description, String? category, int? stock}) async {
     isLoading = true;
     errorMessage = null;
     try {
       final newProduct = Product(
-        id: '', 
+        id: '',
         name: name,
         price: price,
+        description: description,
+        category: category,
+        stock: stock,
+        status: 'draft',
       );
 
       final success = await addProductUseCase.execute(newProduct);
       if (success) {
-        await fetchProducts(); 
+        await fetchProducts();
         return true;
       }
       return false;
@@ -90,17 +94,13 @@ abstract class _ProductStore with Store {
   }
 
   @action
-  Future<bool> editProduct(String id, String newName, double newPrice) async {
+  Future<bool> editProduct(String id, Map<String, dynamic> updatedData) async {
     isLoading = true;
     errorMessage = null;
     try {
-      final success = await updateProductUseCase.execute(
-        id, 
-        {'name': newName, 'price': newPrice}
-      );
-
+      final success = await updateProductUseCase.execute(id, updatedData);
       if (success) {
-        await fetchProducts(); 
+        await fetchProducts();
         return true;
       }
       return false;
@@ -114,25 +114,21 @@ abstract class _ProductStore with Store {
 
   @action
   Future<bool> removeProduct(String id) async {
-    // Optimistic Update: Hapus dari UI secara instan agar Dismissible tidak crash
     final targetProduct = products.firstWhere((p) => p.id == id);
-    products.remove(targetProduct);
+    products.remove(targetProduct); // Optimistic UI Update
 
     isLoading = true;
     errorMessage = null;
     try {
       final success = await deleteProductUseCase.execute(id);
-
       if (success) {
-        return true; // Tidak perlu fetch ulang karena data sudah hilang dari UI
+        return true;
       } else {
-        // Jika server gagal menghapus, kembalikan data ke UI
         products.add(targetProduct);
         errorMessage = "Gagal menghapus produk di server";
         return false;
       }
     } catch (e) {
-      // Jika error, kembalikan data ke UI
       products.add(targetProduct);
       errorMessage = "Error API (Delete): ${e.toString()}";
       return false;

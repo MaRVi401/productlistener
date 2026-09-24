@@ -6,9 +6,14 @@ class ProductModel extends Product {
     required super.name,
     required super.price,
     super.imageUrl,
+    super.description,
+    super.category,
+    super.stock,
+    super.status,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    // Parsing harga fleksibel (bisa string "25000" atau angka)
     double parsedPrice = 0.0;
     if (json['price'] != null) {
       if (json['price'] is num) {
@@ -18,24 +23,32 @@ class ProductModel extends Product {
       }
     }
 
+    // Parsing gambar dari Directus
     String? finalImageUrl;
     if (json['image_url'] != null && json['image_url'].toString().isNotEmpty) {
-      // Gabungkan Base URL BaaS Anda dengan endpoint /assets/ dan ID gambar
       finalImageUrl = 'https://pos.cicd.web.id/assets/${json['image_url']}';
     }
 
     return ProductModel(
       id: json['id']?.toString() ?? '',
-      name: json['name'] ?? json['title'] ?? 'Tanpa Nama',
+      name: json['name'] ?? 'Tanpa Nama',
       price: parsedPrice,
       imageUrl: finalImageUrl,
+      description: json['description']?.toString(),
+      category: json['category']?.toString(),
+      stock: json['stock'] != null ? int.tryParse(json['stock'].toString()) : null,
+      status: json['status']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'price': price,
+      'price': price.toStringAsFixed(0),
+      'description': description,
+      'category': category,
+      'stock': stock,
+      'status': status ?? 'draft',
     };
   }
 }

@@ -9,9 +9,11 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        // --- BAGIAN MENAMPILKAN GAMBAR ---
+        contentPadding: const EdgeInsets.all(12),
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: product.imageUrl != null
@@ -20,36 +22,42 @@ class ProductCard extends StatelessWidget {
                   width: 60,
                   height: 60,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    // Jika URL valid tapi gambar gagal dimuat dari server
-                    return Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    );
-                  },
+                  errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
                 )
-              : Container(
-                  // Jika produk memang tidak memiliki gambar
-                  width: 60,
-                  height: 60,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                ),
+              : _buildPlaceholder(),
         ),
-        // ---------------------------------
         title: Text(
           product.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          'Rp ${product.price.toStringAsFixed(0)}',
-          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              'Rp ${product.price.toStringAsFixed(0)}',
+              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w700),
+            ),
+            if (product.category != null)
+              Text(
+                product.category!,
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+          ],
         ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 60,
+      height: 60,
+      color: Colors.grey[200],
+      child: const Icon(Icons.image_not_supported, color: Colors.grey),
     );
   }
 }
