@@ -13,7 +13,6 @@ class ProductModel extends Product {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    // Parsing harga fleksibel (bisa string "25000" atau angka)
     double parsedPrice = 0.0;
     if (json['price'] != null) {
       if (json['price'] is num) {
@@ -23,7 +22,6 @@ class ProductModel extends Product {
       }
     }
 
-    // Parsing gambar dari Directus
     String? finalImageUrl;
     if (json['image_url'] != null && json['image_url'].toString().isNotEmpty) {
       finalImageUrl = 'https://pos.cicd.web.id/assets/${json['image_url']}';
@@ -44,11 +42,12 @@ class ProductModel extends Product {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'price': price.toStringAsFixed(0),
+      'price': price.toStringAsFixed(0), 
       'description': description,
       'category': category,
       'stock': stock,
       'status': status ?? 'draft',
+      'image_url': imageUrl, // MENGIRIM ID GAMBAR KE SERVER
     };
   }
 }

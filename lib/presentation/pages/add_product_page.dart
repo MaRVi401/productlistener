@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:image_picker/image_picker.dart';
 import '../mobx/product_store.dart';
-import 'product_list_page.dart'; // Import halaman Product List
+import 'product_list_page.dart';
 
 class AddProductPage extends StatefulWidget {
   final ProductStore productStore;
@@ -20,6 +22,9 @@ class _AddProductPageState extends State<AddProductPage> {
   final _catController = TextEditingController();
   final _stockController = TextEditingController();
 
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -30,9 +35,32 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
+  // Fungsi membuka Galeri Foto dengan penanganan Error & Izin
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80, // Kompresi ringan agar upload ke server lebih cepat
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      debugPrint("[ERROR PICK IMAGE]: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuka galeri: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      // 1. Tutup keyboard
+      // Tutup keyboard agar tidak mengganggu context
       FocusScope.of(context).unfocus();
 
       final name = _nameController.text;
@@ -41,21 +69,22 @@ class _AddProductPageState extends State<AddProductPage> {
       final cat = _catController.text.isNotEmpty ? _catController.text : null;
       final stock = _stockController.text.isNotEmpty ? int.parse(_stockController.text) : null;
 
-      // 2. Jalankan API
+      // Jalankan proses simpan data + upload gambar
       widget.productStore.addNewProduct(
-        name, 
-        price, 
-        description: desc, 
-        category: cat, 
-        stock: stock
+        name,
+        price,
+        description: desc,
+        category: cat,
+        stock: stock,
+        imageFile: _selectedImage,
       ).then((success) {
         if (mounted) {
           if (success) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Produk berhasil ditambahkan!')),
+              const SnackBar(content: Text('Produk beserta gambar berhasil ditambahkan!')),
             );
-            
-            // 3. REDIRECT: Ganti halaman saat ini dengan ProductListPage
+
+            // Redirect ke halaman daftar produk
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -83,6 +112,42 @@ class _AddProductPageState extends State<AddProductPage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
+                // --- AREA TAP PILIH GAMBAR (MATERIAL & INKWELL) ---
+                Material(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _pickImage, // Memanggil galeri
+                    child: Container(
+                      width: double.infinity,
+                      height: 180,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                      child: _selectedImage != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                            )
+                          : const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Tap untuk tambah gambar',
+                                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // --- INPUT TEKS ---
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Nama Produk*'),
@@ -113,6 +178,8 @@ class _AddProductPageState extends State<AddProductPage> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 24),
+
+                // --- TOMBOL SIMPAN ---
                 Observer(
                   builder: (_) {
                     return widget.productStore.isLoading
@@ -121,7 +188,9 @@ class _AddProductPageState extends State<AddProductPage> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: _submit,
-                              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
                               child: const Text('Simpan Produk', style: TextStyle(fontSize: 16)),
                             ),
                           );

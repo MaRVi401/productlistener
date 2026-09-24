@@ -85,18 +85,22 @@ mixin _$ProductStore on _ProductStore, Store {
 
   @override
   Future<bool> addNewProduct(String name, double price,
-      {String? description, String? category, int? stock}) {
+      {String? description, String? category, int? stock, File? imageFile}) {
     return _$addNewProductAsyncAction.run(() => super.addNewProduct(name, price,
-        description: description, category: category, stock: stock));
+        description: description,
+        category: category,
+        stock: stock,
+        imageFile: imageFile));
   }
 
   late final _$editProductAsyncAction =
       AsyncAction('_ProductStore.editProduct', context: context);
 
   @override
-  Future<bool> editProduct(String id, Map<String, dynamic> updatedData) {
+  Future<bool> editProduct(String id, Map<String, dynamic> updatedData,
+      {File? imageFile}) {
     return _$editProductAsyncAction
-        .run(() => super.editProduct(id, updatedData));
+        .run(() => super.editProduct(id, updatedData, imageFile: imageFile));
   }
 
   late final _$removeProductAsyncAction =

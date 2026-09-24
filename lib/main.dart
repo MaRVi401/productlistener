@@ -11,6 +11,7 @@ import 'presentation/pages/tantangan_page.dart';
 import 'core/network/api_service.dart';
 import 'domain/usecases/update_product.dart';
 import 'domain/usecases/delete_product.dart';
+import 'package:belajarmobile2/domain/usecases/upload_image.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,12 +24,14 @@ void main() {
   final addProductUseCase = AddProduct(repository);
   final updateProductUseCase = UpdateProduct(repository);
   final deleteProductUseCase = DeleteProduct(repository);
+  final uploadImageUseCase = UploadImage(repository);
 
   final productStore = ProductStore(
     getProductsUseCase: getProductsUseCase,
     addProductUseCase: addProductUseCase,
     updateProductUseCase: updateProductUseCase,
     deleteProductUseCase: deleteProductUseCase,
+    uploadImageUseCase: uploadImageUseCase,
   );
 
   runApp(MyApp(productStore: productStore));

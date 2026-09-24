@@ -1,3 +1,4 @@
+import 'dart:io';
 import '../entities/product.dart';
 
 abstract class ProductRepository {
@@ -5,4 +6,5 @@ abstract class ProductRepository {
   Future<bool> addProduct(Product product);
   Future<bool> updateProduct(String id, Map<String, dynamic> data);
   Future<bool> deleteProduct(String id);
+  Future<String> uploadImage(File file);
 }

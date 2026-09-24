@@ -8,6 +8,7 @@ import 'package:belajarmobile2/domain/usecases/add_product.dart';
 import 'package:belajarmobile2/presentation/mobx/product_store.dart';
 import 'package:belajarmobile2/domain/usecases/update_product.dart';
 import 'package:belajarmobile2/domain/usecases/delete_product.dart';
+import 'package:belajarmobile2/domain/usecases/upload_image.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
@@ -26,6 +27,7 @@ void main() {
       addProductUseCase: addProductUseCase,
       updateProductUseCase: UpdateProduct(repository),
       deleteProductUseCase: DeleteProduct(repository),
+      uploadImageUseCase: UploadImage(repository)
     );
 
     await tester.pumpWidget(MyApp(productStore: productStore));

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../domain/entities/product.dart';
 import '../mobx/product_store.dart';
 import '../widgets/product_card.dart';
@@ -9,8 +11,8 @@ class ProductListPage extends StatelessWidget {
 
   const ProductListPage({super.key, required this.productStore});
 
-  // 1. DIALOG EDIT (Mengembalikan Map data jika disave, null jika batal)
-  Future<Map<String, dynamic>?> _showEditDialog(BuildContext context, Product product) {
+  // --- DIALOG EDIT PRODUK BERSAMA GAMBAR ---
+  Future<bool?> _showEditDialog(BuildContext context, Product product) {
     final nameController = TextEditingController(text: product.name);
     final priceController = TextEditingController(text: product.price.toStringAsFixed(0));
     final descController = TextEditingController(text: product.description);
@@ -18,73 +20,145 @@ class ProductListPage extends StatelessWidget {
     final stockController = TextEditingController(text: product.stock?.toString());
     final formKey = GlobalKey<FormState>();
 
-    return showDialog<Map<String, dynamic>>(
+    File? newSelectedImage;
+    final ImagePicker picker = ImagePicker();
+
+    return showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Edit Produk'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nama Produk*'),
-                    validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
-                  ),
-                  TextFormField(
-                    controller: priceController,
-                    decoration: const InputDecoration(labelText: 'Harga*'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v == null || double.tryParse(v) == null ? 'Harga tidak valid' : null,
-                  ),
-                  TextFormField(
-                    controller: catController,
-                    decoration: const InputDecoration(labelText: 'Kategori'),
-                  ),
-                  TextFormField(
-                    controller: stockController,
-                    decoration: const InputDecoration(labelText: 'Stok'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  TextFormField(
-                    controller: descController,
-                    decoration: const InputDecoration(labelText: 'Deskripsi'),
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, null),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  // Kembalikan data yang sudah diisi ke pemanggil
-                  Navigator.pop(dialogContext, {
-                    'name': nameController.text,
-                    'price': double.parse(priceController.text),
-                    'category': catController.text,
-                    'stock': int.tryParse(stockController.text),
-                    'description': descController.text,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> pickNewImage() async {
+              try {
+                final pickedFile = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 80,
+                );
+                if (pickedFile != null) {
+                  setDialogState(() {
+                    newSelectedImage = File(pickedFile.path);
                   });
                 }
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
+              } catch (e) {
+                debugPrint("[ERROR PICK IMAGE EDIT]: $e");
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('Edit Produk'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // --- PREVIEW GAMBAR LAMA / GAMBAR BARU ---
+                      GestureDetector(
+                        onTap: pickNewImage,
+                        child: Container(
+                          width: double.infinity,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade400),
+                          ),
+                          child: newSelectedImage != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.file(newSelectedImage!, fit: BoxFit.cover),
+                                )
+                              : (product.imageUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        product.imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                                      ),
+                                    )
+                                  : const Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                                        SizedBox(height: 6),
+                                        Text('Tap untuk ubah gambar', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                      ],
+                                    )),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Nama Produk*'),
+                        validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+                      ),
+                      TextFormField(
+                        controller: priceController,
+                        decoration: const InputDecoration(labelText: 'Harga*'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) => v == null || double.tryParse(v) == null ? 'Harga tidak valid' : null,
+                      ),
+                      TextFormField(
+                        controller: catController,
+                        decoration: const InputDecoration(labelText: 'Kategori'),
+                      ),
+                      TextFormField(
+                        controller: stockController,
+                        decoration: const InputDecoration(labelText: 'Stok'),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextFormField(
+                        controller: descController,
+                        decoration: const InputDecoration(labelText: 'Deskripsi'),
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final updatedData = {
+                        'name': nameController.text,
+                        'price': double.parse(priceController.text),
+                        'category': catController.text,
+                        'stock': int.tryParse(stockController.text),
+                        'description': descController.text,
+                      };
+
+                      Navigator.pop(dialogContext, true);
+
+                      productStore.editProduct(
+                        product.id,
+                        updatedData,
+                        imageFile: newSelectedImage,
+                      ).then((success) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(success ? 'Berhasil mengupdate produk!' : 'Gagal update produk')),
+                          );
+                        }
+                      });
+                    }
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  // 2. DIALOG HAPUS (Mengembalikan true jika Hapus, false jika Batal)
+  // --- DIALOG HAPUS ---
   Future<bool?> _confirmDelete(BuildContext context, Product product) {
     return showDialog<bool>(
       context: context,
@@ -106,7 +180,7 @@ class ProductListPage extends StatelessWidget {
     );
   }
 
-  // 3. BOTTOM SHEET DETAIL
+  // --- MODAL DETAIL PRODUK ---
   void _showProductDetail(BuildContext context, Product product) {
     showModalBottomSheet(
       context: context,
@@ -139,12 +213,12 @@ class ProductListPage extends StatelessWidget {
                     child: product.imageUrl != null
                         ? Image.network(
                             product.imageUrl!,
-                            height: 150,
+                            height: 160,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildPlaceholder(150),
+                            errorBuilder: (_, __, ___) => _buildPlaceholder(160),
                           )
-                        : _buildPlaceholder(150),
+                        : _buildPlaceholder(160),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -173,13 +247,9 @@ class ProductListPage extends StatelessWidget {
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                       onPressed: () async {
-                        // Tutup Bottom Sheet dulu
-                        Navigator.pop(sheetContext); 
-                        
-                        // Munculkan konfirmasi hapus
+                        Navigator.pop(sheetContext);
                         final confirm = await _confirmDelete(context, product);
                         if (confirm == true) {
-                          // Lakukan penghapusan jika dikonfirmasi
                           final success = await productStore.removeProduct(product.id);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -192,21 +262,9 @@ class ProductListPage extends StatelessWidget {
                       label: const Text('Hapus'),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () async {
-                        // Tutup Bottom Sheet dulu
+                      onPressed: () {
                         Navigator.pop(sheetContext);
-
-                        // Munculkan dialog edit
-                        final updatedData = await _showEditDialog(context, product);
-                        if (updatedData != null) {
-                          // Lakukan penyimpanan jika data diisi (tidak dibatalkan)
-                          final success = await productStore.editProduct(product.id, updatedData);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(success ? 'Berhasil diupdate!' : 'Gagal update')),
-                            );
-                          }
-                        }
+                        _showEditDialog(context, product);
                       },
                       icon: const Icon(Icons.edit),
                       label: const Text('Edit Produk'),
@@ -244,7 +302,6 @@ class ProductListPage extends StatelessWidget {
     );
   }
 
-  // 4. MAIN BUILDER
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,7 +341,6 @@ class ProductListPage extends StatelessWidget {
                         color: Colors.red,
                         child: const Icon(Icons.delete, color: Colors.white),
                       ),
-                      // Konfirmasi swipe otomatis terhubung ke _confirmDelete
                       confirmDismiss: (direction) => _confirmDelete(context, item),
                       onDismissed: (direction) {
                         productStore.removeProduct(item.id).then((success) {

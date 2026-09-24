@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mobx/mobx.dart';
 import '../../domain/entities/product.dart';
@@ -5,6 +6,7 @@ import '../../domain/usecases/add_product.dart';
 import '../../domain/usecases/get_products.dart';
 import '../../domain/usecases/update_product.dart';
 import '../../domain/usecases/delete_product.dart';
+import '../../domain/usecases/upload_image.dart';
 
 part 'product_store.g.dart';
 
@@ -16,12 +18,14 @@ abstract class _ProductStore with Store {
   final AddProduct addProductUseCase;
   final UpdateProduct updateProductUseCase;
   final DeleteProduct deleteProductUseCase;
+  final UploadImage uploadImageUseCase;
 
   _ProductStore({
     required this.getProductsUseCase,
     required this.addProductUseCase,
     required this.updateProductUseCase,
     required this.deleteProductUseCase,
+    required this.uploadImageUseCase,
   }) {
     _disposers = [
       reaction((_) => errorMessage, (String? message) {
@@ -65,10 +69,22 @@ abstract class _ProductStore with Store {
   }
 
   @action
-  Future<bool> addNewProduct(String name, double price, {String? description, String? category, int? stock}) async {
+  Future<bool> addNewProduct(
+    String name,
+    double price, {
+    String? description,
+    String? category,
+    int? stock,
+    File? imageFile,
+  }) async {
     isLoading = true;
     errorMessage = null;
     try {
+      String? imageId;
+      if (imageFile != null) {
+        imageId = await uploadImageUseCase.execute(imageFile);
+      }
+
       final newProduct = Product(
         id: '',
         name: name,
@@ -77,6 +93,7 @@ abstract class _ProductStore with Store {
         category: category,
         stock: stock,
         status: 'draft',
+        imageUrl: imageId,
       );
 
       final success = await addProductUseCase.execute(newProduct);
@@ -94,10 +111,20 @@ abstract class _ProductStore with Store {
   }
 
   @action
-  Future<bool> editProduct(String id, Map<String, dynamic> updatedData) async {
+  Future<bool> editProduct(
+    String id,
+    Map<String, dynamic> updatedData, {
+    File? imageFile,
+  }) async {
     isLoading = true;
     errorMessage = null;
     try {
+      // Jika pengguna memilih gambar baru saat edit, unggah dulu ke server
+      if (imageFile != null) {
+        final newImageId = await uploadImageUseCase.execute(imageFile);
+        updatedData['image_url'] = newImageId;
+      }
+
       final success = await updateProductUseCase.execute(id, updatedData);
       if (success) {
         await fetchProducts();
@@ -115,7 +142,7 @@ abstract class _ProductStore with Store {
   @action
   Future<bool> removeProduct(String id) async {
     final targetProduct = products.firstWhere((p) => p.id == id);
-    products.remove(targetProduct); // Optimistic UI Update
+    products.remove(targetProduct);
 
     isLoading = true;
     errorMessage = null;
