@@ -5,10 +5,10 @@ class ProductModel extends Product {
     required super.id,
     required super.name,
     required super.price,
+    super.imageUrl,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    // Handling fleksibel untuk konversi tipe data price dari JSON (num / string)
     double parsedPrice = 0.0;
     if (json['price'] != null) {
       if (json['price'] is num) {
@@ -18,10 +18,17 @@ class ProductModel extends Product {
       }
     }
 
+    String? finalImageUrl;
+    if (json['image_url'] != null && json['image_url'].toString().isNotEmpty) {
+      // Gabungkan Base URL BaaS Anda dengan endpoint /assets/ dan ID gambar
+      finalImageUrl = 'https://pos.cicd.web.id/assets/${json['image_url']}';
+    }
+
     return ProductModel(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? json['title'] ?? 'Tanpa Nama',
       price: parsedPrice,
+      imageUrl: finalImageUrl,
     );
   }
 

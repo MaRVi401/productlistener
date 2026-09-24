@@ -89,6 +89,23 @@ mixin _$ProductStore on _ProductStore, Store {
         .run(() => super.addNewProduct(name, price));
   }
 
+  late final _$editProductAsyncAction =
+      AsyncAction('_ProductStore.editProduct', context: context);
+
+  @override
+  Future<bool> editProduct(String id, String newName, double newPrice) {
+    return _$editProductAsyncAction
+        .run(() => super.editProduct(id, newName, newPrice));
+  }
+
+  late final _$removeProductAsyncAction =
+      AsyncAction('_ProductStore.removeProduct', context: context);
+
+  @override
+  Future<bool> removeProduct(String id) {
+    return _$removeProductAsyncAction.run(() => super.removeProduct(id));
+  }
+
   @override
   String toString() {
     return '''

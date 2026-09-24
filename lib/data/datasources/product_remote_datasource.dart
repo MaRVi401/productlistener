@@ -20,13 +20,23 @@ class ProductRemoteDataSource {
   }
 
   Future<bool> addProduct(ProductModel product) async {
-    // Pastikan price benar-benar dikirim sebagai number (double/int)
     final body = {
       'name': product.name,
-      'price': product.price.toDouble(), 
+      'price': product.price.toDouble(),
     };
-
     final response = await apiService.post('items/products', body);
     return response != null;
+  }
+
+  // TAMBAHAN: Fungsi Update
+  Future<bool> updateProduct(String id, Map<String, dynamic> data) async {
+    final response = await apiService.patch('items/products/$id', data);
+    return response != null;
+  }
+
+  // TAMBAHAN: Fungsi Delete
+  Future<bool> deleteProduct(String id) async {
+    final response = await apiService.delete('items/products/$id');
+    return response == true;
   }
 }

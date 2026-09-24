@@ -9,20 +9,26 @@ import 'presentation/pages/home_page.dart';
 import 'presentation/pages/product_list_page.dart';
 import 'presentation/pages/tantangan_page.dart';
 import 'core/network/api_service.dart';
+import 'domain/usecases/update_product.dart';
+import 'domain/usecases/delete_product.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final apiService = ApiService(); 
+  final apiService = ApiService();
   final remoteDataSource = ProductRemoteDataSource(apiService: apiService);
   final repository = ProductRepositoryImpl(remoteDataSource: remoteDataSource);
 
   final getProductsUseCase = GetProducts(repository);
   final addProductUseCase = AddProduct(repository);
+  final updateProductUseCase = UpdateProduct(repository);
+  final deleteProductUseCase = DeleteProduct(repository);
 
   final productStore = ProductStore(
     getProductsUseCase: getProductsUseCase,
     addProductUseCase: addProductUseCase,
+    updateProductUseCase: updateProductUseCase,
+    deleteProductUseCase: deleteProductUseCase,
   );
 
   runApp(MyApp(productStore: productStore));

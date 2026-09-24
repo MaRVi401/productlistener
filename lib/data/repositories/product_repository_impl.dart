@@ -22,4 +22,14 @@ class ProductRepositoryImpl implements ProductRepository {
     );
     return await remoteDataSource.addProduct(productModel);
   }
+
+  @override
+  Future<bool> updateProduct(String id, Map<String, dynamic> data) async {
+    return await remoteDataSource.updateProduct(id, data);
+  }
+
+  @override
+  Future<bool> deleteProduct(String id) async {
+    return await remoteDataSource.deleteProduct(id);
+  }
 }
