@@ -13,7 +13,38 @@ Aplikasi POS sederhana berbasis Flutter yang menerapkan prinsip **Clean Architec
   - **Update**: Mengubah informasi produk dan mengganti foto produk.
   - **Delete**: Menghapus produk dengan fitur *Optimistic Update* dan animasi *Dismissible*.
 - **Media Upload**: Pengunggahan foto produk dari galeri lokal ke Directus Asset Storage via `image_picker`.
-- **State Management**: MobX dengan dukungan reaksi otomatis (*computed & observer*).
+- **State Management**: MobX dengan dukungan pilar utama (*Observable, Action, Computed, & Reaction*).
+
+---
+
+## ⚡ Implementasi MobX State Management
+
+Aplikasi ini mengimplementasikan 4 pilar utama MobX secara utuh di dalam `lib/presentation/mobx/product_store.dart`:
+
+1. **`@observable` (State Tracking)**
+   - `products`: `ObservableList<Product>` — Menyimpan daftar produk yang dipantau secara reaktif oleh UI.
+   - `isLoading`: `bool` — Menandai status proses async/API.
+   - `errorMessage`: `String?` — Menampung pesan error jika terjadi kendala API.
+
+2. **`@action` (State Mutation)**
+   - `fetchProducts()` — Mengambil data produk dari backend.
+   - `addNewProduct()` — Menambah produk baru beserta pengunggahan file gambar.
+   - `editProduct()` — Memperbarui data produk dan foto produk.
+   - `removeProduct()` — Menghapus produk dengan *optimistic update*.
+
+3. **`@computed` (Derived State)**
+   - `totalProducts` — Menghitung jumlah item produk secara otomatis dan efisien (`products.length`).
+   - `totalPrice` — Akumulasi total harga seluruh produk (`products.fold(...)`).
+
+4. **`Reaction` (Side Effects)**
+   - Menggunakan `reaction` pada konstruktor `_ProductStore()` untuk mendeteksi perubahan pada `errorMessage` dan otomatis mencetak log debug/sampingan tanpa merusak alur pembentukan UI:
+     ```dart
+     reaction((_) => errorMessage, (String? message) {
+       if (message != null && message.isNotEmpty) {
+         debugPrint("[REACTION LOG]: Exception/Error terjadi - $message");
+       }
+     });
+     ```
 
 ---
 
@@ -46,11 +77,11 @@ lib/
 │       └── upload_image.dart         # Usecase: Upload Gambar
 ├── presentation/
 │   ├── mobx/
-│   │   ├── product_store.dart        # MobX Store (Actions, Observables, Computed)
+│   │   ├── product_store.dart        # MobX Store (Actions, Observables, Computed, Reactions)
 │   │   └── product_store.g.dart      # Generated code oleh build_runner
 │   ├── pages/
 │   │   ├── add_product_page.dart     # Halaman Form Tambah Produk & Picker Gambar
-│   │   ├── home_page.dart            # Halaman Utam/Dashboard
+│   │   ├── home_page.dart            # Halaman Utama/Dashboard
 │   │   ├── product_list_page.dart    # Halaman Daftar Produk & Modal Detail/Edit
 │   │   └── tantangan_page.dart       # Halaman Tantangan
 │   └── widgets/
